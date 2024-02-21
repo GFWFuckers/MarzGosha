@@ -7,6 +7,8 @@ from rich.panel import Panel
 from rich.table import Table
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
+from decouple import config, UndefinedValueError
 
 from app.db import GetDB, crud
 from app.db.models import Admin, User
