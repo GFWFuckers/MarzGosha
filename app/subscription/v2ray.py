@@ -9,10 +9,10 @@ from uuid import UUID
 from app.subscription.funcs import get_grpc_gun, get_grpc_multi
 from app.templates import render_template
 from config import (
-    MUX_TEMPLATE, 
-    USER_AGENT_TEMPLATE, 
-    V2RAY_SUBSCRIPTION_TEMPLATE,
     GRPC_USER_AGENT_TEMPLATE,
+    MUX_TEMPLATE,
+    USER_AGENT_TEMPLATE,
+    V2RAY_SUBSCRIPTION_TEMPLATE
 )
 
 
@@ -376,7 +376,7 @@ class V2rayJsonConfig(str):
         self.mux_template = render_template(MUX_TEMPLATE)
         temp_user_agent_data = render_template(USER_AGENT_TEMPLATE)
         user_agent_data = json.loads(temp_user_agent_data)
-        
+
         if 'list' in user_agent_data and isinstance(user_agent_data['list'], list):
             self.user_agent_list = user_agent_data['list']
         else:
@@ -741,7 +741,8 @@ class V2rayJsonConfig(str):
             network_setting = self.ws_config(
                 path=path, host=host, random_user_agent=random_user_agent)
         elif net == "grpc":
-            network_setting = self.grpc_config(path=path, host=host, multiMode=multiMode, random_user_agent=random_user_agent)
+            network_setting = self.grpc_config(path=path, host=host, multiMode=multiMode,
+                                               random_user_agent=random_user_agent)
         elif net == "h2":
             network_setting = self.h2_config(
                 path=path, host=host, random_user_agent=random_user_agent)
