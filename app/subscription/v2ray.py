@@ -514,7 +514,8 @@ class V2rayJsonConfig(str):
             tcpSettings["header"]["request"]["headers"] = {}
             tcpSettings["header"]["request"]["method"] = "GET"
             tcpSettings["header"]["request"]["headers"]["Accept-Encoding"] = ["gzip, deflate"]
-            tcpSettings["header"]["request"]["headers"]["Connection"] = ["keep-alive"]
+            tcpSettings["header"]["request"]["headers"]["Connection"] = [
+                "keep-alive"]
             tcpSettings["header"]["request"]["headers"]["Pragma"] = "no-cache"
 
             if path:
@@ -835,7 +836,8 @@ class V2rayJsonConfig(str):
         if fragment:
             try:
                 length, interval, packets = fragment.split(',')
-                fragment_outbound = self.make_fragment_outbound(packets, length, interval)
+                fragment_outbound = self.make_fragment_outbound(
+                    packets, length, interval)
                 outbounds.append(fragment_outbound)
                 dialer_proxy = fragment_outbound['tag']
             except ValueError:
