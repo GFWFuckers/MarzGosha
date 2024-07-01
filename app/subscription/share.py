@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from config import (ACTIVE_STATUS_TEXT, DISABLED_STATUS_TEXT,
                     EXPIRED_STATUS_TEXT, LIMITED_STATUS_TEXT,
-                    ONHOLD_STATUS_TEXT)
+                    ONHOLD_STATUS_TEXT, RANDOM_SUB_CONFIGS)
 
 SERVER_IP = get_public_ip()
 SERVER_IPV6 = get_public_ipv6()
@@ -124,6 +124,9 @@ def generate_subscription(
 
     if as_base64:
         config = base64.b64encode(config.encode()).decode()
+
+    if RANDOM_SUB_CONFIGS is not False:
+        random.shuffle(config)
 
     return config
 
