@@ -31,6 +31,8 @@ XRAY_EXCLUDE_INBOUND_TAGS = config("XRAY_EXCLUDE_INBOUND_TAGS", default='').spli
 XRAY_SUBSCRIPTION_URL_PREFIX = config("XRAY_SUBSCRIPTION_URL_PREFIX", default="").strip("/")
 XRAY_SUBSCRIPTION_PATH = config("XRAY_SUBSCRIPTION_PATH", default="sub").strip("/")
 
+RANDOM_SUB_CONFIGS = config("RANDOM_SUB_CONFIGS", default=False, cast=bool)
+
 TELEGRAM_API_TOKEN = config("TELEGRAM_API_TOKEN", default="")
 TELEGRAM_ADMIN_ID = config(
     'TELEGRAM_ADMIN_ID',
