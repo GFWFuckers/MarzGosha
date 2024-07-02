@@ -1,3 +1,10 @@
+from config import MUX_TEMPLATE, USER_AGENT_TEMPLATE, V2RAY_SUBSCRIPTION_TEMPLATE
+from config import (
+    GRPC_USER_AGENT_TEMPLATE,
+    MUX_TEMPLATE,
+    USER_AGENT_TEMPLATE,
+    V2RAY_SUBSCRIPTION_TEMPLATE
+)
 import base64
 import json
 import urllib.parse as urlparse
@@ -8,12 +15,9 @@ from uuid import UUID
 
 from app.subscription.funcs import get_grpc_gun, get_grpc_multi
 from app.templates import render_template
-from config import (
-    GRPC_USER_AGENT_TEMPLATE,
-    MUX_TEMPLATE,
-    USER_AGENT_TEMPLATE,
-    V2RAY_SUBSCRIPTION_TEMPLATE
-)
+<< << << < HEAD
+== == == =
+>>>>>> > d1259b0(add random UA to splithttp)
 
 
 class V2rayShareLink(str):
