@@ -116,7 +116,6 @@ def randomize_sub_config(
         config = yaml.dump(config, allow_unicode=True, sort_keys=False)
 
     elif config_format == "sing-box":
-        config = json.loads(config)
         outbounds = config['outbounds']
         main_outbounds = [ob for ob in outbounds if ob['type'] in {'selector', 'urltest'}]
         other_outbounds = [ob for ob in outbounds if ob['type'] not in {'selector', 'urltest', 'direct', 'block', 'dns'}]
