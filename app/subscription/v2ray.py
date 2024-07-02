@@ -460,7 +460,8 @@ class V2rayJsonConfig(str):
         if host:
             httpupgradeSettings["host"] = host
         if random_user_agent:
-            httpupgradeSettings["headers"]["User-Agent"] = choice(self.user_agent_list)
+            httpupgradeSettings["headers"]["User-Agent"] = choice(
+                self.user_agent_list)
 
         return httpupgradeSettings
 
@@ -525,7 +526,8 @@ class V2rayJsonConfig(str):
                 tcpSettings["header"]["request"]["headers"]["Host"] = [host]
 
             if random_user_agent:
-                tcpSettings["header"]["request"]["headers"]["User-Agent"] = [choice(self.user_agent_list)]
+                tcpSettings["header"]["request"]["headers"]["User-Agent"] = [
+                    choice(self.user_agent_list)]
             else:
                 tcpSettings["header"]["request"]["headers"]["User-Agent"] = []
 
@@ -544,7 +546,8 @@ class V2rayJsonConfig(str):
         else:
             httpSettings["host"] = []
         if random_user_agent:
-            httpSettings["headers"]["User-Agent"] = [choice(self.user_agent_list)]
+            httpSettings["headers"]["User-Agent"] = [
+                choice(self.user_agent_list)]
 
         return httpSettings
 
@@ -735,16 +738,19 @@ class V2rayJsonConfig(str):
                             ):
 
         if net == "ws":
-            network_setting = self.ws_config(path=path, host=host, random_user_agent=random_user_agent)
+            network_setting = self.ws_config(
+                path=path, host=host, random_user_agent=random_user_agent)
         elif net == "grpc":
             network_setting = self.grpc_config(path=path, host=host, multiMode=multiMode, random_user_agent=random_user_agent)
         elif net == "h2":
-            network_setting = self.h2_config(path=path, host=host, random_user_agent=random_user_agent)
+            network_setting = self.h2_config(
+                path=path, host=host, random_user_agent=random_user_agent)
         elif net == "kcp":
             network_setting = self.kcp_config(
                 path=path, host=host, header=headers)
         elif net == "tcp":
-            network_setting = self.tcp_http_config(path=path, host=host, random_user_agent=random_user_agent)
+            network_setting = self.tcp_http_config(
+                path=path, host=host, random_user_agent=random_user_agent)
         elif net == "quic":
             network_setting = self.quic_config(path=path, host=host, header=headers)
         elif net == "httpupgrade":
