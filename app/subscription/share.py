@@ -157,7 +157,7 @@ def generate_subscription(
     else:
         raise ValueError(f'Unsupported format "{config_format}"')
 
-    if RANDOMIZE_SUBSCRIPTION_CONFIGS is not False:
+    if RANDOMIZE_SUBSCRIPTION_CONFIGS:
         config = randomize_sub_config(config, config_format)
         
     if as_base64:
