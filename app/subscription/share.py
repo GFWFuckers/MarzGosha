@@ -163,7 +163,7 @@ def generate_subscription(
             for C in CUSTOM_SUB_CONFIGS:
                 config += "\n" + C 
 
-    if RANDOMIZE_SUBSCRIPTION_CONFIGS is not False:
+    if RANDOMIZE_SUBSCRIPTION_CONFIGS:
         config = randomize_sub_config(config, config_format)
         
     if as_base64:
