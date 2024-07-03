@@ -759,7 +759,6 @@ class V2rayJsonConfig(str):
             network_setting = self.splithttp_config(path=path, host=host, random_user_agent=random_user_agent, 
                                                     max_upload_size=max_upload_size, 
                                                     max_concurrent_uploads=max_concurrent_uploads)
-
         if tls == "tls":
             tls_settings = self.tls_config(sni=sni, fp=fp, alpn=alpn, ais=ais)
         elif tls == "reality":
