@@ -1,12 +1,12 @@
 import base64
+import json
 import random
 import secrets
-import yaml
-import json
 from datetime import datetime as dt
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Literal, Union
 
+import yaml
 from jdatetime import date as jd
 
 from app import xray
@@ -98,10 +98,11 @@ def generate_v2ray_json_subscription(
         inbounds, proxies, format_variables, conf=conf
     )
 
+
 def randomize_sub_config(
         config: str, config_format: str
 ) -> str:
-    
+
     if config_format == "v2ray":
         config = config.split("\n")
         random.shuffle(config)
@@ -116,14 +117,17 @@ def randomize_sub_config(
         config = yaml.dump(config, allow_unicode=True, sort_keys=False)
 
     elif config_format == "sing-box":
+        config = json.loads(config)
         outbounds = config['outbounds']
         main_outbounds = [ob for ob in outbounds if ob['type'] in {'selector', 'urltest'}]
-        other_outbounds = [ob for ob in outbounds if ob['type'] not in {'selector', 'urltest', 'direct', 'block', 'dns'}]
+        other_outbounds = [ob for ob in outbounds if ob['type']
+                           not in {'selector', 'urltest', 'direct', 'block', 'dns'}]
         random.shuffle(other_outbounds)
         proxy_names = [ob['tag'] for ob in other_outbounds]
         for ob in main_outbounds:
             ob['outbounds'] = ['Best Latency'] + proxy_names if ob['type'] == 'selector' else proxy_names
-        config['outbounds'] = main_outbounds + other_outbounds + [ob for ob in outbounds if ob['type'] in {'direct', 'block', 'dns'}]
+        config['outbounds'] = main_outbounds + other_outbounds + [ob for ob in outbounds
+                                                                  if ob['type'] in {'direct', 'block', 'dns'}]
         config = json.dumps(config, indent=4)
 
     elif config_format == "v2ray-json":
