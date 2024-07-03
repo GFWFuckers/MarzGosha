@@ -483,7 +483,7 @@ class V2rayJsonConfig(str):
         
         return splithttpSettings
 
-    def grpc_config(self, path=None, host=None, multiMode=False, random_user_agent=None):
+    def grpc_config(self, path=None, host=None, multiMode=False,random_user_agent=None):
 
         grpcSettings = {}
         if path:
