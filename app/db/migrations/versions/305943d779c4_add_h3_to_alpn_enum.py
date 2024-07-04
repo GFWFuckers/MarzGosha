@@ -81,7 +81,6 @@ def downgrade():
     # before downgrading from new enum to old one,
     # we should replace new value from new enum with
     # somewhat of old values from old enum
-<<<<<<< HEAD
     update_query = (
         temp_table
         .update()
@@ -89,19 +88,6 @@ def downgrade():
         .values(alpn=downgrade_to)
     )
     op.execute(update_query)
-=======
-    op.execute(
-        temp_table
-        .update()
-        .where(
-            temp_table.c.status in downgrade_from
-        )
-        .values(
-            status=downgrade_to
-        )
-    )
->>>>>>> 698eeb5 (fix: add h3 to alpn enum in db)
-
     temp_type.create(op.get_bind(), checkfirst=False)
 
     with op.batch_alter_table(table_name) as batch_op:
