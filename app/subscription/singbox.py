@@ -1,13 +1,13 @@
 import json
 from random import choice
-from app.templates import render_template
-from app.subscription.funcs import get_grpc_gun
 
+from app.subscription.funcs import get_grpc_gun
+from app.templates import render_template
 from config import (
-    SINGBOX_SUBSCRIPTION_TEMPLATE,
-    MUX_TEMPLATE,
-    USER_AGENT_TEMPLATE,
     GRPC_USER_AGENT_TEMPLATE,
+    MUX_TEMPLATE,
+    SINGBOX_SUBSCRIPTION_TEMPLATE,
+    USER_AGENT_TEMPLATE
 )
 
 
@@ -229,9 +229,6 @@ class SingBoxConfiguration(str):
         mux_config = mux_json["sing-box"]
 
         config['multiplex'] = mux_config
-        if config['multiplex']["enabled"]:
-            config['multiplex']["enabled"] = mux_enable
-
         return config
 
     def add(self, remark: str, address: str, inbound: dict, settings: dict):
