@@ -33,6 +33,7 @@ def get_client_ip(request: Request) -> str:
         return forwarded_for.split(",")[0].strip()
     return request.client.host
 
+
 @app.post("/api/admin/token", tags=['Admin'], response_model=Token)
 def admin_token(
     request: Request,
