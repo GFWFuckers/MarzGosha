@@ -65,7 +65,7 @@ LIMITED_STATUS_TEXT = config("LIMITED_STATUS_TEXT", default="Limited")
 DISABLED_STATUS_TEXT = config("DISABLED_STATUS_TEXT", default="Disabled")
 ONHOLD_STATUS_TEXT = config("ONHOLD_STATUS_TEXT", default="On-Hold")
 
-NOTIFE_LOGINS = config("NOTIFE_LOGINS", default=None, cast=bool)
+NOTIFE_LOGINS = config("NOTIFE_LOGINS", default=False, cast=bool)
 
 CUSTOM_SUB_CONFIGS = config(
     'CUSTOM_SUB_CONFIGS',
