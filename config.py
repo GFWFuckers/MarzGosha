@@ -69,8 +69,8 @@ NOTIFE_LOGINS = config("NOTIFE_LOGINS", default=False, cast=bool)
 
 CUSTOM_SUB_CONFIGS = config(
     'CUSTOM_SUB_CONFIGS',
-    default=None,
-    cast=lambda v: [s.strip() for s in v.split(' , ') if s.strip()]
+    default="",
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
 
 # USERNAME: PASSWORD
