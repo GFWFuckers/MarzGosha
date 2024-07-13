@@ -67,6 +67,12 @@ ONHOLD_STATUS_TEXT = config("ONHOLD_STATUS_TEXT", default="On-Hold")
 
 NOTIFE_LOGINS = config("NOTIFE_LOGINS", default=False, cast=bool)
 
+CUSTOM_SUB_CONFIGS = config(
+    'CUSTOM_SUB_CONFIGS',
+    default=None,
+    cast=lambda v: [s.strip() for s in v.split(' , ') if s.strip()]
+)
+
 # USERNAME: PASSWORD
 SUDOERS = {config("SUDO_USERNAME"): config("SUDO_PASSWORD")} \
     if config("SUDO_USERNAME", default='') and config("SUDO_PASSWORD", default='') \
