@@ -1,10 +1,12 @@
 import base64
+import json
 import random
 import secrets
 from datetime import datetime as dt
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Literal, Union
 
+import yaml
 from jdatetime import date as jd
 
 from app import xray
@@ -15,9 +17,16 @@ from . import *
 if TYPE_CHECKING:
     from app.models.user import UserResponse
 
-from config import (ACTIVE_STATUS_TEXT, DISABLED_STATUS_TEXT,
-                    EXPIRED_STATUS_TEXT, LIMITED_STATUS_TEXT,
-                    ONHOLD_STATUS_TEXT)
+from config import (
+    ACTIVE_STATUS_TEXT,
+    CUSTOM_SUB_CONFIGS,
+    DISABLED_STATUS_TEXT,
+    EXPIRED_STATUS_TEXT,
+    LIMITED_STATUS_TEXT,
+    NOTICE_INACTIVE_USERS,
+    ONHOLD_STATUS_TEXT,
+    RANDOMIZE_SUBSCRIPTION_CONFIGS
+)
 
 SERVER_IP = get_public_ip()
 SERVER_IPV6 = get_public_ipv6()
@@ -96,14 +105,73 @@ def generate_v2ray_json_subscription(
     )
 
 
+def randomize_sub_config(
+        config: str, config_format: str
+) -> str:
+
+    if config_format == "v2ray":
+        config = config.split("\n")
+        random.shuffle(config)
+        config = "\n".join(config)
+
+    elif config_format in ("clash-meta", "clash"):
+        config = yaml.safe_load(config)
+        random.shuffle(config['proxies'])
+        for group in config['proxy-groups']:
+            if group['name'] == '♻️ Automatic':
+                group['proxies'] = [proxy['name'] for proxy in config['proxies']]
+        config = yaml.dump(config, allow_unicode=True, sort_keys=False)
+
+    elif config_format == "sing-box":
+        outbounds = config['outbounds']
+        main_outbounds = [ob for ob in outbounds if ob['type'] in {'selector', 'urltest'}]
+        other_outbounds = [ob for ob in outbounds if ob['type']
+                           not in {'selector', 'urltest', 'direct', 'block', 'dns'}]
+        random.shuffle(other_outbounds)
+        proxy_names = [ob['tag'] for ob in other_outbounds]
+        for ob in main_outbounds:
+            ob['outbounds'] = ['Best Latency'] + proxy_names if ob['type'] == 'selector' else proxy_names
+        config['outbounds'] = main_outbounds + other_outbounds + [ob for ob in outbounds
+                                                                  if ob['type'] in {'direct', 'block', 'dns'}]
+        config = json.dumps(config, indent=4)
+
+    elif config_format == "v2ray-json":
+        random.shuffle(config)
+
+    return config
+
+
+def manage_notice(user: "UserResponse"):
+
+    if not any(NOTICE_INACTIVE_USERS in inbounds for inbounds in user.inbounds.values()):
+        return user.inbounds, user.proxies
+    if user.status in ['active', 'on_hold']:
+        filtered_inbounds = {p: i for p, i in user.inbounds.items() if NOTICE_INACTIVE_USERS not in i}
+        filtered_proxies = {p: user.proxies.get(p, {}) for p in filtered_inbounds}
+    else:
+        protocol = next((p for p, i in user.inbounds.items() if NOTICE_INACTIVE_USERS in i), None)
+        if not protocol:
+            return {}, {}
+        filtered_inbounds = {protocol: [NOTICE_INACTIVE_USERS]}
+        filtered_proxies = {protocol: user.proxies.get(protocol, {})}
+
+    return filtered_inbounds, filtered_proxies
+
+
 def generate_subscription(
     user: "UserResponse",
     config_format: Literal["v2ray", "clash-meta", "clash", "sing-box", "outline", "v2ray-json"],
     as_base64: bool,
 ) -> str:
+    if NOTICE_INACTIVE_USERS:
+        inbounds, proxies = manage_notice(user)
+    else:
+        inbounds = user.inbounds
+        proxies = user.proxies
+
     kwargs = {
-        "proxies": user.proxies,
-        "inbounds": user.inbounds,
+        "proxies": proxies,
+        "inbounds": inbounds,
         "extra_data": user.__dict__,
     }
 
@@ -121,6 +189,14 @@ def generate_subscription(
         config = generate_v2ray_json_subscription(**kwargs)
     else:
         raise ValueError(f'Unsupported format "{config_format}"')
+
+    if user.status in ['active','on_hold']:
+        if CUSTOM_SUB_CONFIGS and config_format == "v2ray":
+            for C in CUSTOM_SUB_CONFIGS:
+                config += "\n" + C 
+
+    if RANDOMIZE_SUBSCRIPTION_CONFIGS:
+        config = randomize_sub_config(config, config_format)
 
     if as_base64:
         config = base64.b64encode(config.encode()).decode()
@@ -282,7 +358,8 @@ def process_inbounds_and_tags(
                         "ais": host["allowinsecure"]
                         or inbound.get("allowinsecure", ""),
                         "mux_enable": host["mux_enable"],
-                        "fragment_setting": host["fragment_setting"]
+                        "fragment_setting": host["fragment_setting"],
+                        "random_user_agent": host["random_user_agent"],
                     }
                 )
 
