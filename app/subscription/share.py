@@ -17,11 +17,16 @@ from . import *
 if TYPE_CHECKING:
     from app.models.user import UserResponse
 
-from config import (ACTIVE_STATUS_TEXT, DISABLED_STATUS_TEXT,
-                    EXPIRED_STATUS_TEXT, LIMITED_STATUS_TEXT,
-                    ONHOLD_STATUS_TEXT, RANDOMIZE_SUBSCRIPTION_CONFIGS,
-                    NOTICE_INACTIVE_USERS,
-                    CUSTOM_SUB_CONFIGS)
+from config import (
+    ACTIVE_STATUS_TEXT,
+    CUSTOM_SUB_CONFIGS,
+    DISABLED_STATUS_TEXT,
+    EXPIRED_STATUS_TEXT,
+    LIMITED_STATUS_TEXT,
+    NOTICE_INACTIVE_USERS,
+    ONHOLD_STATUS_TEXT,
+    RANDOMIZE_SUBSCRIPTION_CONFIGS
+)
 
 SERVER_IP = get_public_ip()
 SERVER_IPV6 = get_public_ipv6()
@@ -134,12 +139,13 @@ def randomize_sub_config(
         random.shuffle(config)
 
     return config
-    
+
+
 def manage_notice(user: "UserResponse"):
 
     if not any(NOTICE_INACTIVE_USERS in inbounds for inbounds in user.inbounds.values()):
         return user.inbounds, user.proxies
-    
+
     if user.status in ['active', 'on_hold']:
         filtered_inbounds = {p: i for p, i in user.inbounds.items() if NOTICE_INACTIVE_USERS not in i}
         filtered_proxies = {p: user.proxies.get(p, {}) for p in filtered_inbounds}
@@ -149,9 +155,8 @@ def manage_notice(user: "UserResponse"):
             return {}, {}
         filtered_inbounds = {protocol: [NOTICE_INACTIVE_USERS]}
         filtered_proxies = {protocol: user.proxies.get(protocol, {})}
-    
-    return filtered_inbounds, filtered_proxies
 
+    return filtered_inbounds, filtered_proxies
 
 
 def generate_subscription(
@@ -159,7 +164,7 @@ def generate_subscription(
     config_format: Literal["v2ray", "clash-meta", "clash", "sing-box", "outline", "v2ray-json"],
     as_base64: bool,
 ) -> str:
-    
+
     if NOTICE_INACTIVE_USERS:
         inbounds, proxies = manage_notice(user)
     else:
@@ -187,14 +192,14 @@ def generate_subscription(
     else:
         raise ValueError(f'Unsupported format "{config_format}"')
 
-    if user.status in ['active','on_hold']:
+    if user.status in ['active', 'on_hold']:
         if CUSTOM_SUB_CONFIGS and config_format == "v2ray":
             for C in CUSTOM_SUB_CONFIGS:
-                config += "\n" + C 
+                config += "\n" + C
 
     if RANDOMIZE_SUBSCRIPTION_CONFIGS:
         config = randomize_sub_config(config, config_format)
-        
+
     if as_base64:
         config = base64.b64encode(config.encode()).decode()
 
@@ -349,7 +354,7 @@ def process_inbounds_and_tags(
                         "sni": sni,
                         "host": req_host,
                         "tls": inbound["tls"] if host["tls"] is None else host["tls"],
-                        "alpn": host["alpn"].rsplit(sep=",") or inbound.get("alpn", ""),
+                        "alpn": host["alpn"] or inbound.get("alpn", ""),
                         "path": path,
                         "fp": host["fingerprint"] or inbound.get("fp", ""),
                         "ais": host["allowinsecure"]
