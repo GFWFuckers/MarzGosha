@@ -72,6 +72,8 @@ CUSTOM_SUB_CONFIGS = config(
     default="",
     cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
+USERS_AUTODELETE_DAYS = config("USERS_AUTODELETE_DAYS", default=-1, cast=int)
+USER_AUTODELETE_INCLUDE_LIMITED_ACCOUNTS = config("USER_AUTODELETE_INCLUDE_LIMITED_ACCOUNTS", default=False, cast=bool)
 
 # USERNAME: PASSWORD
 SUDOERS = {config("SUDO_USERNAME"): config("SUDO_PASSWORD")} \
