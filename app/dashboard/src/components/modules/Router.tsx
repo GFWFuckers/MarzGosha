@@ -17,8 +17,8 @@ export const router = createBrowserRouter(
     {
       path: "/",
       element: <Dashboard />,
-      errorElement: <Login />,
-      loader: fetchAdminLoader,
+      // errorElement: <Login />,
+      // loader: fetchAdminLoader,
     },
     {
       path: "/login/",
