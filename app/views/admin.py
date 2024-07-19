@@ -7,9 +7,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app import app
 from app.db import Session, crud, get_db
 from app.models.admin import Admin, AdminCreate, AdminInDB, AdminModify, Token
+from app.utils.jwt import create_admin_token
+from config import SUDOERS
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordRequestForm
 from app.utils import report
 from app.utils.jwt import create_admin_token
 from config import NOTIFE_LOGINS, SUDOERS
+
 
 
 def authenticate_env_sudo(username: str, password: str) -> bool:

@@ -13,6 +13,7 @@ from config import (
     USER_AGENT_TEMPLATE,
     V2RAY_SUBSCRIPTION_TEMPLATE,
     GRPC_USER_AGENT_TEMPLATE,
+    EXTERNAL_CONFIG
 )
 
 
@@ -23,7 +24,11 @@ class V2rayShareLink(str):
     def add_link(self, link):
         self.links.append(link)
 
-    def render(self):
+    def render(self, reverse=False):
+        if EXTERNAL_CONFIG:
+            self.links.append(EXTERNAL_CONFIG)
+        if reverse:
+            self.links.reverse()
         return self.links
 
     def add(self, remark: str, address: str, inbound: dict, settings: dict):
@@ -258,6 +263,10 @@ class V2rayShareLink(str):
             payload["maxUploadSize"] = max_upload_size
             payload["maxConcurrentUploads"] = max_concurrent_uploads
 
+        elif net == 'kcp':
+            payload['seed'] = path
+            payload["host"] = host
+
         else:
             payload["path"] = path
             payload["host"] = host
@@ -337,6 +346,11 @@ class V2rayShareLink(str):
         elif net == 'quic':
             payload['key'] = path
             payload["quicSecurity"] = host
+
+        elif net == 'kcp':
+            payload['seed'] = path
+            payload["host"] = host
+
         else:
             payload["path"] = path
             payload["host"] = host
@@ -402,9 +416,11 @@ class V2rayJsonConfig(str):
         json_template = json.loads(self.template)
         json_template["remarks"] = remarks
         json_template["outbounds"] = outbounds + json_template["outbounds"]
-        self.config.insert(0, (json_template))
+        self.config.append(json_template)
 
-    def render(self):
+    def render(self, reverse=False):
+        if reverse:
+            self.config.reverse()
         return json.dumps(self.config, indent=4)
 
     @staticmethod
@@ -494,16 +510,18 @@ class V2rayJsonConfig(str):
 
     def grpc_config(self, path=None, host=None, multiMode=False,random_user_agent=None):
 
-        grpcSettings = {}
+        grpcSettings = {
+            "multiMode": multiMode,
+            "idle_timeout": 60,
+            "health_check_timeout": 20,
+            "permit_without_stream": False,
+            "initial_windows_size": 35538
+        }
+
         if path:
             grpcSettings["serviceName"] = path
         if host:
             grpcSettings["authority"] = host
-        grpcSettings["multiMode"] = multiMode
-        grpcSettings["idle_timeout"] = 60
-        grpcSettings["health_check_timeout"] = 20
-        grpcSettings["permit_without_stream"] = False
-        grpcSettings["initial_windows_size"] = 35536
 
         if random_user_agent:
             grpcSettings["user_agent"] = choice(self.grpc_user_agent_data)
@@ -514,18 +532,19 @@ class V2rayJsonConfig(str):
         tcpSettings = {}
 
         if any((path, host)):
-            tcpSettings["header"] = {}
-            tcpSettings["header"]["type"] = "http"
-
-            tcpSettings["header"]["request"] = {}
-            tcpSettings["header"]["request"]["version"] = "1.1"
-
-            tcpSettings["header"]["request"]["headers"] = {}
-            tcpSettings["header"]["request"]["method"] = "GET"
-            tcpSettings["header"]["request"]["headers"]["Accept-Encoding"] = ["gzip", "deflate"]
-            tcpSettings["header"]["request"]["headers"]["Connection"] = [
-                "keep-alive"]
-            tcpSettings["header"]["request"]["headers"]["Pragma"] = "no-cache"
+            tcpSettings["header"] = {
+                "type": "http",
+                "request": {
+                    "version": "1.1",
+                    "method": "GET",
+                    "headers": {
+                        "Accept-Encoding": ["gzip", "deflate"],
+                        "Connection": ["keep-alive"],
+                        "Pragma": "no-cache",
+                        "User-Agent": []
+                    },
+                }
+            }
 
             if path:
                 tcpSettings["header"]["request"]["path"] = [path]
@@ -536,15 +555,15 @@ class V2rayJsonConfig(str):
             if random_user_agent:
                 tcpSettings["header"]["request"]["headers"]["User-Agent"] = [
                     choice(self.user_agent_list)]
-            else:
-                tcpSettings["header"]["request"]["headers"]["User-Agent"] = []
 
         return tcpSettings
 
     def h2_config(self, path=None, host=None, random_user_agent=None):
 
-        httpSettings = {}
-        httpSettings["headers"] = {}
+        httpSettings = {
+            "headers": {}
+        }
+
         if path:
             httpSettings["path"] = path
         else:
@@ -560,45 +579,45 @@ class V2rayJsonConfig(str):
         return httpSettings
 
     @staticmethod
-    def quic_config(path=None, host=None, header=None,):
+    def quic_config(path=None, host=None, header=None):
 
-        quicSettings = {}
-        quicSettings["header"] = {"none"}
+        quicSettings = {
+            "security": "none",
+            "header": {"none"},
+            "key": ""
+        }
+
         if path:
             quicSettings["key"] = path
-        else:
-            quicSettings["key"] = ""
         if host:
             quicSettings["security"] = host
-        else:
-            quicSettings["security"] = "none"
         if header:
             quicSettings["header"]["type"] = header
-        else:
-            quicSettings["header"]["type"] = "none"
 
         return quicSettings
 
     @staticmethod
-    def kcp_config(path=None, host=None, header=None):
+    def kcp_config(seed=None, host=None, header=None):
 
-        kcpSettings = {}
-        kcpSettings["header"] = {}
+        kcpSettings = {
+            "header": {},
+            "mtu": 1350,
+            "tti": 50,
+            "uplinkCapacity": 12,
+            "downlinkCapacity": 100,
+            "congestion": False,
+            "readBufferSize": 2,
+            "writeBufferSize": 2,
+        }
 
-        kcpSettings["mtu"] = 1350
-        kcpSettings["tti"] = 50
-        kcpSettings["uplinkCapacity"] = 12
-        kcpSettings["downlinkCapacity"] = 100
-        kcpSettings["congestion"] = False,
-        kcpSettings["readBufferSize"] = 2
-        kcpSettings["writeBufferSize"] = 2
-
-        if path:
-            kcpSettings["seed"] = path
+        if seed:
+            kcpSettings["seed"] = seed
         if header:
             kcpSettings["header"]["type"] = header
         else:
             kcpSettings["header"]["type"] = "none"
+        if host:
+            kcpSettings["header"]["domain"] = host
 
         return kcpSettings
 
@@ -642,72 +661,71 @@ class V2rayJsonConfig(str):
 
     @staticmethod
     def vmess_config(address=None, port=None, id=None):
-
-        vnext = {}
-        users = {}
-
-        vnext["address"] = address
-        vnext["port"] = port
-        users["id"] = id
-        users["alterId"] = 0
-        users["email"] = "t@t.com"
-        users["security"] = "auto"
-        vnext["users"] = [users]
-
-        return [vnext]
+        return {
+            "vnext": [
+                {
+                    "address": address,
+                    "port": port,
+                    "users": [
+                        {
+                            "id": id,
+                            "alterId": 0,
+                            "email": "https://gozargah.github.io/marzban/",
+                            "security": "auto"
+                        }
+                    ],
+                }
+            ]
+        }
 
     @staticmethod
     def vless_config(address=None, port=None, id=None, flow=None):
-
-        vnext = {}
-        users = {}
-
-        vnext["address"] = address
-        vnext["port"] = port
-        users["id"] = id
-        users["alterId"] = 0
-        users["email"] = "t@t.com"
-        users["security"] = "auto"
-        users["encryption"] = "none"
-        if flow:
-            users["flow"] = flow
-        vnext["users"] = [users]
-
-        return [vnext]
+        return {
+            "vnext": [
+                {
+                    "address": address,
+                    "port": port,
+                    "users": [
+                        {
+                            "id": id,
+                            "security": "auto",
+                            "encryption": "none",
+                            "email": "https://gozargah.github.io/marzban/",
+                            "alterId": 0,
+                            "flow": flow
+                        }
+                    ],
+                }
+            ]
+        }
 
     @staticmethod
-    def trojan_config(address=None, port=None, password=None, method="chacha20"):
-
-        servers = {}
-        settings = {}
-
-        servers["address"] = address
-        servers["port"] = port
-        servers["password"] = password
-        servers["email"] = "t@t.com"
-        servers["method"] = method
-        servers["ota"] = False
-
-        settings["servers"] = [servers]
-
-        return settings
+    def trojan_config(address=None, port=None, password=None):
+        return {
+            "servers": [
+                {
+                    "address": address,
+                    "port": port,
+                    "password": password,
+                    "email": "https://gozargah.github.io/marzban/",
+                }
+            ]
+        }
 
     @staticmethod
     def shadowsocks_config(address=None, port=None, password=None, method=None):
-
-        servers = {}
-        settings = {}
-
-        servers["address"] = address
-        servers["port"] = port
-        servers["password"] = password
-        servers["email"] = "t@t.com"
-        servers["method"] = method
-        servers["uot"] = False
-
-        settings["servers"] = [servers]
-
-        return settings
+        return {
+            "servers": [
+                {
+                    "address": address,
+                    "port": port,
+                    "password": password,
+                    "email": "https://gozargah.github.io/marzban/",
+                    "method": method,
+                    "uot": False,
+                }
+            ]
+        }
 
     def make_fragment_outbound(self, packets="tlshello", length="100-200", interval="10-20"):
 
@@ -756,7 +774,7 @@ class V2rayJsonConfig(str):
                 path=path, host=host, random_user_agent=random_user_agent)
         elif net == "kcp":
             network_setting = self.kcp_config(
-                path=path, host=host, header=headers)
+                seed=path, host=host, header=headers)
         elif net == "tcp":
             network_setting = self.tcp_http_config(
                 path=path, host=host, random_user_agent=random_user_agent)
@@ -815,36 +833,31 @@ class V2rayJsonConfig(str):
         }
 
         if inbound['protocol'] == 'vmess':
-            vnext = self.vmess_config(address=address,
-                                      port=port,
-                                      id=settings['id'])
-            outbound["settings"] = {}
-            outbound["settings"]["vnext"] = vnext
+            outbound["settings"] = self.vmess_config(address=address,
+                                                     port=port,
+                                                     id=settings['id'])
 
         elif inbound['protocol'] == 'vless':
             if net in ('tcp', 'kcp') and headers != 'http' and tls in ('tls', 'reality'):
                 flow = settings.get('flow', '')
             else:
                 flow = None
-            vnext = self.vless_config(address=address,
-                                      port=port,
-                                      id=settings['id'],
-                                      flow=flow)
-            outbound["settings"] = {}
-            outbound["settings"]["vnext"] = vnext
+
+            outbound["settings"] = self.vless_config(address=address,
+                                                     port=port,
+                                                     id=settings['id'],
+                                                     flow=flow)
 
         elif inbound['protocol'] == 'trojan':
-            settings = self.trojan_config(address=address,
-                                          port=port,
-                                          password=settings['password'])
-            outbound["settings"] = settings
+            outbound["settings"] = self.trojan_config(address=address,
+                                                      port=port,
+                                                      password=settings['password'])
 
         elif inbound['protocol'] == 'shadowsocks':
-            settings = self.shadowsocks_config(address=address,
-                                               port=port,
-                                               password=settings['password'],
-                                               method=settings['method'])
-            outbound["settings"] = settings
+            outbound["settings"] = self.shadowsocks_config(address=address,
+                                                           port=port,
+                                                           password=settings['password'],
+                                                           method=settings['method'])
 
         outbounds = [outbound]
         dialer_proxy = ''

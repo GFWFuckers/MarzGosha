@@ -56,12 +56,8 @@
 ## Table of Contents
 
 - [Overview](#overview)
-<<<<<<< HEAD
   - [Why using MarzGosha?](#why-using-marzgosha)
-=======
-  - [Why using Marzban?](#why-using-marzban)
->>>>>>> 6b59661 (Bump version to v0.5.0)
-    - [Features](#features)
+  - [Features](#features)
 - [Installation guide](#installation-guide)
 - [Configuration](#configuration)
 - [API](#api)

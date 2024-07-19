@@ -59,25 +59,15 @@
 ## Оглавление
 
 - [Введение](#введение)
-<<<<<<< HEAD
   - [Почему MarzGosha](#почему-marzgosha)
-=======
-  - [Почему Marzban?](#почему-marzban)
->>>>>>> 6b59661 (Bump version to v0.5.0)
     - [Функции](#функции)
 - [Руководство по установке](#руководство-по-установке)
 - [Конфигурация](#конфигурация)
 - [API](#api)
 - [Backup](#backup)
-<<<<<<< HEAD
 - [Telegram бот](#telegram-bot)
 - [MarzGosha CLI](#marzgosha-cli)
 - [MarzGosha Node](#marzgosha-node)
-=======
-- [Telegram Bot](#telegram-bot)
-- [Marzban CLI](#marzban-cli)
-- [Marzban Node](#marzban-node)
->>>>>>> 6b59661 (Bump version to v0.5.0)
 - [Webhook уведомления](#webhook-уведомления)
 - [Поддержка](#поддержка)
 - [Лицензия](#лицензия)

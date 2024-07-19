@@ -5,6 +5,7 @@ import secrets
 from datetime import datetime as dt
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Literal, Union
+from collections import defaultdict
 
 import yaml
 from jdatetime import date as jd
@@ -15,11 +16,11 @@ from app.utils.system import get_public_ip, get_public_ipv6, readable_size
 from . import *
 
 if TYPE_CHECKING:
-    from app.models.user import UserResponse
+    from app.models.user import UserResponse, UserStatus
 
 from config import (
     ACTIVE_STATUS_TEXT,
-    CUSTOM_SUB_CONFIGS,
+    EXTERNAL_CONFIG,
     DISABLED_STATUS_TEXT,
     EXPIRED_STATUS_TEXT,
     LIMITED_STATUS_TEXT,
@@ -48,14 +49,14 @@ STATUS_TEXTS = {
 }
 
 
-def generate_v2ray_links(proxies: dict, inbounds: dict, extra_data: dict) -> list:
+def generate_v2ray_links(proxies: dict, inbounds: dict, extra_data: dict, reverse: bool) -> list:
     format_variables = setup_format_variables(extra_data)
     conf = V2rayShareLink()
-    return process_inbounds_and_tags(inbounds, proxies, format_variables, conf=conf)
+    return process_inbounds_and_tags(inbounds, proxies, format_variables, conf=conf, reverse=reverse)
 
 
 def generate_clash_subscription(
-    proxies: dict, inbounds: dict, extra_data: dict, is_meta: bool = False
+    proxies: dict, inbounds: dict, extra_data: dict, reverse: bool, is_meta: bool = False
 ) -> str:
     if is_meta is True:
         conf = ClashMetaConfiguration()
@@ -64,44 +65,40 @@ def generate_clash_subscription(
 
     format_variables = setup_format_variables(extra_data)
     return process_inbounds_and_tags(
-        inbounds, proxies, format_variables, conf=conf
+        inbounds, proxies, format_variables, conf=conf, reverse=reverse
     )
 
 
 def generate_singbox_subscription(
-    proxies: dict, inbounds: dict, extra_data: dict
+    proxies: dict, inbounds: dict, extra_data: dict, reverse: bool
 ) -> str:
     conf = SingBoxConfiguration()
 
     format_variables = setup_format_variables(extra_data)
     return process_inbounds_and_tags(
-        inbounds, proxies, format_variables, conf=conf
+        inbounds, proxies, format_variables, conf=conf, reverse=reverse
     )
 
 
-def generate_v2ray_subscription(links: list) -> str:
-    return base64.b64encode("\n".join(links).encode()).decode()
-
-
 def generate_outline_subscription(
-    proxies: dict, inbounds: dict, extra_data: dict
+    proxies: dict, inbounds: dict, extra_data: dict, reverse: bool,
 ) -> str:
     conf = OutlineConfiguration()
 
     format_variables = setup_format_variables(extra_data)
     return process_inbounds_and_tags(
-        inbounds, proxies, format_variables, conf=conf
+        inbounds, proxies, format_variables, conf=conf, reverse=reverse
     )
 
 
 def generate_v2ray_json_subscription(
-    proxies: dict, inbounds: dict, extra_data: dict
+    proxies: dict, inbounds: dict, extra_data: dict, reverse: bool,
 ) -> str:
     conf = V2rayJsonConfig()
 
     format_variables = setup_format_variables(extra_data)
     return process_inbounds_and_tags(
-        inbounds, proxies, format_variables, conf=conf
+        inbounds, proxies, format_variables, conf=conf, reverse=reverse
     )
 
 
@@ -119,20 +116,24 @@ def randomize_sub_config(
         random.shuffle(config['proxies'])
         for group in config['proxy-groups']:
             if group['name'] == '♻️ Automatic':
-                group['proxies'] = [proxy['name'] for proxy in config['proxies']]
+                group['proxies'] = [proxy['name']
+                                    for proxy in config['proxies']]
         config = yaml.dump(config, allow_unicode=True, sort_keys=False)
 
     elif config_format == "sing-box":
         outbounds = config['outbounds']
-        main_outbounds = [ob for ob in outbounds if ob['type'] in {'selector', 'urltest'}]
-        other_outbounds = [ob for ob in outbounds if ob['type']
-                           not in {'selector', 'urltest', 'direct', 'block', 'dns'}]
+        main_outbounds = [ob for ob in outbounds if ob['type']
+                          in {'selector', 'urltest'}]
+        other_outbounds = [ob for ob in outbounds if ob['type'] not in {
+            'selector', 'urltest', 'direct', 'block', 'dns'}]
         random.shuffle(other_outbounds)
         proxy_names = [ob['tag'] for ob in other_outbounds]
         for ob in main_outbounds:
-            ob['outbounds'] = ['Best Latency'] + proxy_names if ob['type'] == 'selector' else proxy_names
-        config['outbounds'] = main_outbounds + other_outbounds + [ob for ob in outbounds
-                                                                  if ob['type'] in {'direct', 'block', 'dns'}]
+            ob['outbounds'] = ['Best Latency'] + \
+                proxy_names if ob['type'] == 'selector' else proxy_names
+        config['outbounds'] = main_outbounds + other_outbounds + \
+            [ob for ob in outbounds if ob['type']
+                in {'direct', 'block', 'dns'}]
         config = json.dumps(config, indent=4)
 
     elif config_format == "v2ray-json":
@@ -162,6 +163,7 @@ def generate_subscription(
     user: "UserResponse",
     config_format: Literal["v2ray", "clash-meta", "clash", "sing-box", "outline", "v2ray-json"],
     as_base64: bool,
+    reverse: bool,
 ) -> str:
     if NOTICE_INACTIVE_USERS:
         inbounds, proxies = manage_notice(user)
@@ -173,6 +175,7 @@ def generate_subscription(
         "proxies": proxies,
         "inbounds": inbounds,
         "extra_data": user.__dict__,
+        "reverse": reverse,
     }
 
     if config_format == "v2ray":
@@ -191,8 +194,8 @@ def generate_subscription(
         raise ValueError(f'Unsupported format "{config_format}"')
 
     if user.status in ['active','on_hold']:
-        if CUSTOM_SUB_CONFIGS and config_format == "v2ray":
-            for C in CUSTOM_SUB_CONFIGS:
+        if EXTERNAL_CONFIG  and config_format == "v2ray":
+            for C in EXTERNAL_CONFIG:
                 config += "\n" + C 
 
     if RANDOMIZE_SUBSCRIPTION_CONFIGS:
@@ -281,20 +284,23 @@ def setup_format_variables(extra_data: dict) -> dict:
     status_emoji = STATUS_EMOJIS.get(extra_data.get("status")) or ""
     status_text = STATUS_TEXTS.get(extra_data.get("status")) or ""
 
-    format_variables = {
-        "SERVER_IP": SERVER_IP,
-        "SERVER_IPV6": SERVER_IPV6,
-        "USERNAME": extra_data.get("username", "{USERNAME}"),
-        "DATA_USAGE": readable_size(extra_data.get("used_traffic")),
-        "DATA_LIMIT": data_limit,
-        "DATA_LEFT": data_left,
-        "DAYS_LEFT": days_left,
-        "EXPIRE_DATE": expire_date,
-        "JALALI_EXPIRE_DATE": jalali_expire_date,
-        "TIME_LEFT": time_left,
-        "STATUS_EMOJI": status_emoji,
-        "STATUS_TEXT": status_text,
-    }
+    format_variables = defaultdict(
+        lambda: "<missing>",
+        {
+            "SERVER_IP": SERVER_IP,
+            "SERVER_IPV6": SERVER_IPV6,
+            "USERNAME": extra_data.get("username", "{USERNAME}"),
+            "DATA_USAGE": readable_size(extra_data.get("used_traffic")),
+            "DATA_LIMIT": data_limit,
+            "DATA_LEFT": data_left,
+            "DAYS_LEFT": days_left,
+            "EXPIRE_DATE": expire_date,
+            "JALALI_EXPIRE_DATE": jalali_expire_date,
+            "TIME_LEFT": time_left,
+            "STATUS_EMOJI": status_emoji,
+            "STATUS_TEXT": status_text,
+        },
+    )
 
     return format_variables
 
@@ -304,14 +310,17 @@ def process_inbounds_and_tags(
     proxies: dict,
     format_variables: dict,
     conf=None,
+    reverse=False,
 ) -> Union[List, str]:
 
     _inbounds = []
     for protocol, tags in inbounds.items():
         for tag in tags:
             _inbounds.append((protocol, [tag]))
-    index_dict = {proxy: index for index, proxy in enumerate(xray.config.inbounds_by_tag.keys())}
-    inbounds = sorted(_inbounds, key=lambda x: index_dict.get(x[1][0], float('inf')))
+    index_dict = {proxy: index for index, proxy in enumerate(
+        xray.config.inbounds_by_tag.keys())}
+    inbounds = sorted(
+        _inbounds, key=lambda x: index_dict.get(x[1][0], float('inf')))
 
     for protocol, tags in inbounds:
         settings = proxies.get(protocol)
@@ -370,7 +379,7 @@ def process_inbounds_and_tags(
                     settings=settings.dict(no_obj=True),
                 )
 
-    return conf.render()
+    return conf.render(reverse=reverse)
 
 
 def encode_title(text: str) -> str:

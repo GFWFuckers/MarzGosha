@@ -59,12 +59,8 @@
 ## 目录
 
 - [概览](#概览)
-<<<<<<< HEAD
   - [为什么要使用 MarzGosha?](#为什么要使用-marzgosha)
-=======
-  - [为什么要使用 Marzban?](#为什么要使用-marzban)
->>>>>>> 6b59661 (Bump version to v0.5.0)
-    - [特性](#特性)
+  - [特性](#特性)
 - [安装指南](#安装指南)
 - [配置](#配置)
 - [如何使用 API](#如何使用-api)
@@ -291,6 +287,10 @@ server {
 | USE_CUSTOM_JSON_FOR_V2RAYNG              | Enable custom JSON config only for V2rayNG (default: `False`)                                                            |
 | USE_CUSTOM_JSON_FOR_STREISAND            | Enable custom JSON config only for Streisand (default: `False`)                                                          |
 | USE_CUSTOM_JSON_FOR_V2RAYN               | Enable custom JSON config only for V2rayN (default: `False`)                                                             |
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/dev
 
 # 如何使用 API
 

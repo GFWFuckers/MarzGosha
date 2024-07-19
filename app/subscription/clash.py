@@ -6,10 +6,10 @@ import yaml
 from app.subscription.funcs import get_grpc_gun
 from app.templates import render_template
 from config import (
-    CLASH_SUBSCRIPTION_TEMPLATE, 
-    MUX_TEMPLATE,
-    USER_AGENT_TEMPLATE,
+    CLASH_SUBSCRIPTION_TEMPLATE,
     GRPC_USER_AGENT_TEMPLATE,
+    MUX_TEMPLATE,
+    USER_AGENT_TEMPLATE
 )
 
 
@@ -39,7 +39,9 @@ class ClashConfiguration(object):
         else:
             self.grpc_user_agent_data = []
 
-    def render(self):
+    def render(self, reverse=False):
+        if reverse:
+            self.data['proxies'].reverse()
         return yaml.dump(
             yaml.load(
                 render_template(
@@ -94,6 +96,7 @@ class ClashConfiguration(object):
             network = 'http'
 
         remark = self._remark_validation(name)
+        self.proxy_remarks.append(remark)
         node = {
             'name': remark,
             'type': type,
@@ -185,6 +188,10 @@ class ClashConfiguration(object):
         return node
 
     def add(self, remark: str, address: str, inbound: dict, settings: dict):
+        # not supported by clash
+        if inbound['network'] in ("kcp", "splithttp"):
+            return
+        
         node = self.make_node(
             name=remark,
             type=inbound['protocol'],
@@ -208,18 +215,15 @@ class ClashConfiguration(object):
             node['alterId'] = 0
             node['cipher'] = 'auto'
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
         if inbound['protocol'] == 'trojan':
             node['password'] = settings['password']
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
         if inbound['protocol'] == 'shadowsocks':
             node['password'] = settings['password']
             node['cipher'] = settings['method']
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
 
 class ClashMetaConfiguration(ClashConfiguration):
@@ -267,6 +271,10 @@ class ClashMetaConfiguration(ClashConfiguration):
         return node
 
     def add(self, remark: str, address: str, inbound: dict, settings: dict):
+        # not supported by clash-meta
+        if inbound['network'] in ("kcp", "splithttp"):
+            return
+        
         node = self.make_node(
             name=remark,
             type=inbound['protocol'],
@@ -293,7 +301,6 @@ class ClashMetaConfiguration(ClashConfiguration):
             node['alterId'] = 0
             node['cipher'] = 'auto'
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
         if inbound['protocol'] == 'vless':
             node['uuid'] = settings['id']
@@ -302,7 +309,6 @@ class ClashMetaConfiguration(ClashConfiguration):
                 node['flow'] = settings.get('flow', '')
 
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
         if inbound['protocol'] == 'trojan':
             node['password'] = settings['password']
@@ -311,10 +317,8 @@ class ClashMetaConfiguration(ClashConfiguration):
                 node['flow'] = settings.get('flow', '')
 
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
 
         if inbound['protocol'] == 'shadowsocks':
             node['password'] = settings['password']
             node['cipher'] = settings['method']
             self.data['proxies'].append(node)
-            self.proxy_remarks.append(remark)
